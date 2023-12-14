@@ -18,7 +18,7 @@ Shader "Custom/SDFs"
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Assets/SDFs/SDFsDefine.hlsl"
+            #include "Assets/SDFs/Shader/SDFsDefine.hlsl"
 
             #pragma vertex vert
             #pragma fragment frag
@@ -53,7 +53,7 @@ Shader "Custom/SDFs"
                 return result;
             }
 
-            float3 getNormal(float3 surfacePos)
+            float3 calcNormal(float3 surfacePos)
             {
                 float df = sdfScene(surfacePos);
                 float2 dt = float2(0.001f, 0.0f);
@@ -101,7 +101,7 @@ Shader "Custom/SDFs"
 
             float getLight(float3 surfacePos)
             {
-                float3 normal = getNormal(surfacePos);
+                float3 normal = calcNormal(surfacePos);
                 //漫反射光照
                 return max(0.0f, dot(normal, _DirectionalLightDir));
             }
