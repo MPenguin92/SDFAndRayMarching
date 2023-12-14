@@ -54,6 +54,7 @@
      <Folder Include="Assets\Settings" />
      <None Include="Assets\SDFs\Custom_SDFs.shader" />
      <Folder Include="Assets\SDFs" />
+     <None Include="Assets\Inigo Quilez.txt" />
      <Folder Include="Assets\TutorialInfo\Scripts" />
      <Folder Include="Assets\TutorialInfo\Icons" />
      <Folder Include="Assets\TutorialInfo" />
