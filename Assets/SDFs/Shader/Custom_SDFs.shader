@@ -13,7 +13,9 @@ Shader "Custom/SDFs"
         //物体底色
         _BaseColor("BaseColor",Color) = (1,1,1,1)
         //环境光
-        _AmbientColor("_AmbientColor",Color) = (1,1,1,1)
+        _AmbientColor("AmbientColor",Color) = (1,1,1,1)
+        //并集平滑值
+        _SmoothUnion("SmoothUnion",Range(0.0,1.0)) = 0.5
     }
     SubShader
     {
@@ -28,6 +30,7 @@ Shader "Custom/SDFs"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/SDFs/Shader/SDFsDefine.hlsl"
+            #include "Assets/SDFs/Shader/Transform.hlsl"
 
             #pragma vertex vert
             #pragma fragment frag
@@ -40,6 +43,7 @@ Shader "Custom/SDFs"
             float4 _BaseColor;
             float4 _AmbientColor;
             float4 _ShadowColor;
+            float _SmoothUnion;
             CBUFFER_END
 
             #define StepFloatPrecision 0.0001
@@ -59,10 +63,20 @@ Shader "Custom/SDFs"
             float sdfScene(float3 samplePos)
             {
                 float result = 0;
+                //min ->并集 max -> 交集
+                const float3 spherePoint = translate(samplePos, float3(0, 0, 25));
+                result = sdfSphere(spherePoint, 5);
 
-                result = sdfSphere(samplePos + float3(0, 0, -25), 5);
-                result = min(result, sdBox(samplePos + float3(-9, 0, -25), 2));
-                result = min(result, sdfPlane(samplePos, -5));
+                float t = sin(_Time.z);
+                const float3 boxPoint = rotate(translate(samplePos, float3(t * 8, 0, 25)), float3(0, t * 360, 45));
+                result = opSmoothUnion(result, sdfBox(boxPoint, 2),
+                                       _SmoothUnion);
+
+                const float3 spherePoint2 = translate(samplePos, float3(0, abs(t) * 8, 25));
+                result = opSmoothUnion(result, sdfSphere(spherePoint2, 2),
+                                       _SmoothUnion);
+
+                result = opSmoothUnion(result, sdfPlane(samplePos, -5), _SmoothUnion);
 
                 return result;
             }

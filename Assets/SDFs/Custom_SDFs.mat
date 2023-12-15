@@ -29,8 +29,13 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _SoftShadow: 19.6
-    - _Step: 500
+    - _ShadowStep: 512
+    - _SmoothUnion: 1
+    - _SoftShadow: 9.8
+    - _Step: 512
     m_Colors:
+    - _AmbientColor: {r: 0.1981132, g: 0.1981132, b: 0.1981132, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _DirectionalLightDir: {r: 0.14, g: 0.57, b: -0.42, a: 0}
+    - _ShadowColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
   m_BuildTextureStacks: []
