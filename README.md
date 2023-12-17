@@ -1,8 +1,8 @@
 # CustomSDFsWithUnity
 用Unity实现SDF绘制,学习资料来自于https://iquilezles.org/articles/distfunctions/ <br>
 
-<video id="video" controls="" preload="none">
-      <source id="mp4" src="snapshot/" type="video/mp4">
+<video id="video" controls="" preload="none" poster="录屏1">
+      <source id="mp4" src="snapshot/video1.mp4" type="video/mp4">
 </videos>
 
 #### 首先
