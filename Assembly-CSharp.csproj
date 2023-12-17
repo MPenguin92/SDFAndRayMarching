@@ -50,6 +50,7 @@
      <Compile Include="Assets\SDFs\SDFsVolume.cs" />
      <Compile Include="Assets\SDFs\CustomSDFsRenderPassFeature.Pass.cs" />
      <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+     <Compile Include="Assets\SDFs\FakeLightMono.cs" />
      <Folder Include="Assets" />
      <Folder Include="Assets\Settings" />
      <None Include="Assets\SDFs\Shader\Custom_SDFs.shader" />
@@ -61,6 +62,7 @@
      <Folder Include="Assets\TutorialInfo\Icons" />
      <Folder Include="Assets\TutorialInfo" />
      <None Include="Assets\SDFs\Shader\SDFsDefine.hlsl" />
+     <None Include="Assets\SDFs\Shader\Operate.hlsl" />
      <Folder Include="Assets\Scenes" />
      <Reference Include="UnityEngine">
      <HintPath>D:\SOFT\2022.3.13f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>

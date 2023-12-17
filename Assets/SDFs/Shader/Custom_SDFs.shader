@@ -31,6 +31,7 @@ Shader "Custom/SDFs"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/SDFs/Shader/SDFsDefine.hlsl"
             #include "Assets/SDFs/Shader/Transform.hlsl"
+            #include "Assets/SDFs/Shader/Operate.hlsl"
 
             #pragma vertex vert
             #pragma fragment frag
@@ -111,7 +112,8 @@ Shader "Custom/SDFs"
                 return false;
             }
 
-            //软阴影就是除了被完全遮挡的部分无光,周围也有渐变衰减的阴影
+            //软阴影简单来说就是除了被完全遮挡的部分无光,周围也有渐变衰减的阴影
+            //https://iquilezles.org/articles/rmshadows/
             float calSoftShadow(float3 surfacePos, float k)
             {
                 float res = 1.0f;

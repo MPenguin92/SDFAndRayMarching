@@ -8,10 +8,12 @@ using UnityEngine.Rendering.Universal;
 
 public partial class CustomSDFsRenderPassFeature
 {
+    private static readonly int DirectionalLightDir = Shader.PropertyToID("_DirectionalLightDir");
+
     private class CustomSDFsRenderPass : ScriptableRenderPass
     {
         private SDFsVolume mVolume;
-        private Material mMaterial;
+        private readonly Material mMaterial;
 
         // This method is called before executing the render pass.
         // It can be used to configure render targets and their clear state. Also to create temporary render target textures.
@@ -22,6 +24,7 @@ public partial class CustomSDFsRenderPassFeature
         {
             mVolume = volume;
             mMaterial = material;
+
             this.renderPassEvent = renderPassEvent;
         }
 
@@ -36,11 +39,19 @@ public partial class CustomSDFsRenderPassFeature
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             var cmd = CommandBufferPool.Get("CustomSDFsRenderPass");
-            try {
+            try
+            {
                 cmd.Clear();
                 cmd.DrawMesh(MiscUtil.FullScreenTriangleMesh, Matrix4x4.identity, mMaterial);
+                if (mVolume != null)
+                {
+                    mMaterial.SetVector(DirectionalLightDir, -mVolume.GetFakeLightDir());
+                }
+
                 context.ExecuteCommandBuffer(cmd);
-            } finally {
+            }
+            finally
+            {
                 cmd.Release();
             }
         }
