@@ -10,8 +10,6 @@ Shader "Custom/SDFs"
         _SoftShadow ("SoftShadow", float) = 8
         //阴影颜色
         _ShadowColor("ShadowColor",Color) = (0.1,0.1,0.1,1)
-        //物体底色
-        _BaseColor("BaseColor",Color) = (1,1,1,1)
         //环境光
         _AmbientColor("AmbientColor",Color) = (1,1,1,1)
         //并集平滑值
@@ -23,7 +21,7 @@ Shader "Custom/SDFs"
         {
             "RenderPipeline" = "UniversalPipeline"
         }
-
+        Blend SrcAlpha OneMinusSrcAlpha
         Pass
         {
             HLSLPROGRAM
@@ -41,7 +39,6 @@ Shader "Custom/SDFs"
             float3 _DirectionalLightDir;
             float _SoftShadow;
             float _ShadowStep;
-            float4 _BaseColor;
             float4 _AmbientColor;
             float4 _ShadowColor;
             float _SmoothUnion;
@@ -60,24 +57,36 @@ Shader "Custom/SDFs"
                 float3 positionWS : TEXCOORD0;
             };
 
+
             //拼场景
-            float sdfScene(float3 samplePos)
+            DrawSceneData sdfScene(float3 samplePos)
             {
-                float result = 0;
-                //min ->并集 max -> 交集
-                const float3 spherePoint = translate(samplePos, float3(0, 0, 25));
-                result = sdfSphere(spherePoint, 5);
-
+                DrawSceneData result;
                 float t = sin(_Time.z);
+
+                DrawSceneData sphere1;
+                const float3 spherePoint = translate(samplePos, float3(0, 0, 25));
+                sphere1.opResult = sdfSphere(spherePoint, 5);
+                sphere1.opColor = float3(0.2, 0.2, 0.6);
+
+                DrawSceneData box1;
                 const float3 boxPoint = rotate(translate(samplePos, float3(t * 8, 0, 25)), float3(0, t * 360, 45));
-                result = opSmoothUnion(result, sdfBox(boxPoint, 2),
-                                       _SmoothUnion);
+                box1.opResult = sdfBox(boxPoint, 2);
+                box1.opColor = float3(0, 0.8, 0.8);
+                // result = opUnion(sphere1, box1);
+                result = opSmoothUnion(sphere1, box1, _SmoothUnion);
 
+                DrawSceneData sphere2;
                 const float3 spherePoint2 = translate(samplePos, float3(0, abs(t) * 8, 25));
-                result = opSmoothUnion(result, sdfSphere(spherePoint2, 2),
-                                       _SmoothUnion);
+                sphere2.opResult = sdfSphere(spherePoint2, 2);
+                sphere2.opColor = float3(1, 1, 0);
+                //result = opUnion(result, sphere2);
+                result = opSmoothUnion(result, sphere2, _SmoothUnion);
 
-                result = opSmoothUnion(result, sdfPlane(samplePos, -5), _SmoothUnion);
+                DrawSceneData plane;
+                plane.opResult = sdfPlane(samplePos, -5);
+                plane.opColor = float3(1, 1, 1);
+                result = opUnion(result, plane);
 
                 return result;
             }
@@ -86,12 +95,12 @@ Shader "Custom/SDFs"
             //https://iquilezles.org/articles/normalsSDF/
             float3 calcNormal(float3 surfacePos)
             {
-                float df = sdfScene(surfacePos);
+                DrawSceneData df = sdfScene(surfacePos);
                 float2 dt = float2(StepFloatPrecision, 0.0f);
                 return normalize(float3(
-                    sdfScene(surfacePos + dt.xyy) - df,
-                    sdfScene(surfacePos + dt.yxy) - df,
-                    sdfScene(surfacePos + dt.yyx) - df
+                    sdfScene(surfacePos + dt.xyy).opResult - df.opResult,
+                    sdfScene(surfacePos + dt.yxy).opResult - df.opResult,
+                    sdfScene(surfacePos + dt.yyx).opResult - df.opResult
                 ));
             }
 
@@ -102,7 +111,7 @@ Shader "Custom/SDFs"
                 float t = 0.5f;
                 for (int i = 0; i < _ShadowStep; i++)
                 {
-                    float h = sdfScene(surfacePos + _DirectionalLightDir * t);
+                    float h = sdfScene(surfacePos + _DirectionalLightDir * t).opResult;
                     if (h < StepFloatPrecision)
                     {
                         return true;
@@ -120,7 +129,7 @@ Shader "Custom/SDFs"
                 float t = 0.5f;
                 for (int i = 0; i < _ShadowStep; i++)
                 {
-                    float h = sdfScene(surfacePos + _DirectionalLightDir * t);
+                    float h = sdfScene(surfacePos + _DirectionalLightDir * t).opResult;
                     if (h < StepFloatPrecision)
                     {
                         return 0.02f;
@@ -138,22 +147,27 @@ Shader "Custom/SDFs"
                 return max(0.0f, dot(normal, _DirectionalLightDir));
             }
 
+
             float4 rayMarching(float3 pos, float3 dir)
             {
+                float4 col = float4(0.0f, 0.0f, 0.0f, 0.0f);
                 for (int step = 0; step < _Step; step++)
                 {
-                    float d = sdfScene(pos);
+                    DrawSceneData data = sdfScene(pos);
+                    float d = data.opResult;
+                    float4 baseC = float4(data.opColor, 1);
                     //d==0话代表在表面 <0则是在内部
                     if (d < StepFloatPrecision)
                     {
                         //bool isShadow = calHardShadow(pos);
-                        float4 diffuse = _BaseColor * getLight(pos) + _AmbientColor;
-                        //渲染阴影~反射颜色的插值
-                        return lerp(_ShadowColor, diffuse, calSoftShadow(pos, _SoftShadow));
+                        float4 diffuse = baseC * getLight(pos) + _AmbientColor;
+                        //渲染阴影~阴影颜色的插值
+                        col = lerp(_ShadowColor, diffuse, calSoftShadow(pos, _SoftShadow));
+                        break;
                     }
                     pos += dir * d;
                 }
-                return float4(0.0f, 0.0f, 0.0f, 1.0f);
+                return col;
             }
 
             Varyings vert(Attributes input)

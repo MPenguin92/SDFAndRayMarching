@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ceb7f7971ee12443845b5dc3e703192, type: 3}
   m_Name: SDFsVolume
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   isRender:
     m_OverrideState: 1
     m_Value: 1
