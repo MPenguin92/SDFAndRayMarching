@@ -1,6 +1,5 @@
 ﻿#ifndef Transform
 #define Transform
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 float3 translate(float3 oriPos, float3 offset)
 {

@@ -12,6 +12,10 @@ Shader "Custom/SDFs"
         _ShadowColor("ShadowColor",Color) = (0.1,0.1,0.1,1)
         //环境光
         _AmbientColor("AmbientColor",Color) = (1,1,1,1)
+        //高光反射系数
+        _Specular("Specular",Range(0,1)) = 1
+        //光强
+        _Intensity("Intensity",Range(0,5)) = 1
         //并集平滑值
         _SmoothUnion("SmoothUnion",Range(0.0,1.0)) = 0.5
     }
@@ -21,15 +25,14 @@ Shader "Custom/SDFs"
         {
             "RenderPipeline" = "UniversalPipeline"
         }
-        Blend SrcAlpha OneMinusSrcAlpha
+        //Blend SrcAlpha OneMinusSrcAlpha
         Pass
         {
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Assets/SDFs/Shader/SDFsDefine.hlsl"
-            #include "Assets/SDFs/Shader/Transform.hlsl"
-            #include "Assets/SDFs/Shader/Operate.hlsl"
+            #include "Assets/SDFs/Shader/DrawSDFScene.hlsl"
+            #include "Assets/SDFs/Shader/Light.hlsl"
 
             #pragma vertex vert
             #pragma fragment frag
@@ -42,6 +45,10 @@ Shader "Custom/SDFs"
             float4 _AmbientColor;
             float4 _ShadowColor;
             float _SmoothUnion;
+            float _dpx;
+            float _dpy;
+            float _Specular;
+            float _Intensity;
             CBUFFER_END
 
             #define StepFloatPrecision 0.0001
@@ -61,34 +68,7 @@ Shader "Custom/SDFs"
             //拼场景
             DrawSceneData sdfScene(float3 samplePos)
             {
-                DrawSceneData result;
-                float t = sin(_Time.z);
-
-                DrawSceneData sphere1;
-                const float3 spherePoint = translate(samplePos, float3(0, 0, 25));
-                sphere1.opResult = sdfSphere(spherePoint, 5);
-                sphere1.opColor = float3(0.2, 0.2, 0.6);
-
-                DrawSceneData box1;
-                const float3 boxPoint = rotate(translate(samplePos, float3(t * 8, 0, 25)), float3(0, t * 360, 45));
-                box1.opResult = sdfBox(boxPoint, 2);
-                box1.opColor = float3(0, 0.8, 0.8);
-                // result = opUnion(sphere1, box1);
-                result = opSmoothUnion(sphere1, box1, _SmoothUnion);
-
-                DrawSceneData sphere2;
-                const float3 spherePoint2 = translate(samplePos, float3(0, abs(t) * 8, 25));
-                sphere2.opResult = sdfSphere(spherePoint2, 2);
-                sphere2.opColor = float3(1, 1, 0);
-                //result = opUnion(result, sphere2);
-                result = opSmoothUnion(result, sphere2, _SmoothUnion);
-
-                DrawSceneData plane;
-                plane.opResult = sdfPlane(samplePos, -5);
-                plane.opColor = float3(1, 1, 1);
-                result = opUnion(result, plane);
-
-                return result;
+                return drawSDFScene(samplePos, _SmoothUnion, _dpx, _dpy);
             }
 
             //曲面求导的方式算出法线方向
@@ -139,18 +119,11 @@ Shader "Custom/SDFs"
                 }
                 return res;
             }
-
-            float getLight(float3 surfacePos)
-            {
-                float3 normal = calcNormal(surfacePos);
-                //漫反射光照
-                return max(0.0f, dot(normal, _DirectionalLightDir));
-            }
-
+            
 
             float4 rayMarching(float3 pos, float3 dir)
             {
-                float4 col = float4(0.0f, 0.0f, 0.0f, 0.0f);
+                float4 col = float4(0.0f, 0.0f, 0.0f, 1.0f);
                 for (int step = 0; step < _Step; step++)
                 {
                     DrawSceneData data = sdfScene(pos);
@@ -159,10 +132,15 @@ Shader "Custom/SDFs"
                     //d==0话代表在表面 <0则是在内部
                     if (d < StepFloatPrecision)
                     {
-                        //bool isShadow = calHardShadow(pos);
-                        float4 diffuse = baseC * getLight(pos) + _AmbientColor;
+                        float3 normal = calcNormal(pos);
+
+                        //归一化视角向量,
+                        const float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - pos);
+
+                        const float4 lightModel = GetLight(baseC,normal,_DirectionalLightDir,viewDir,_Intensity,_Specular,_AmbientColor);
+
                         //渲染阴影~阴影颜色的插值
-                        col = lerp(_ShadowColor, diffuse, calSoftShadow(pos, _SoftShadow));
+                        col = lerp(_ShadowColor, lightModel, calSoftShadow(pos, _SoftShadow));
                         break;
                     }
                     pos += dir * d;
@@ -181,10 +159,14 @@ Shader "Custom/SDFs"
 
             half4 frag(Varyings input) : SV_Target
             {
-                float3 start = GetCameraPositionWS();
+                float3 start = _WorldSpaceCameraPos;
                 //相机视椎体剪裁面的世界坐标
                 float3 target = input.positionWS;
                 float3 dir = normalize(target - start);
+
+                _dpx = ddx(target.x);
+                _dpy = ddy(target.y);
+
                 //根据相机的位置和方向，开始光线步进
                 return rayMarching(start, dir);
             }

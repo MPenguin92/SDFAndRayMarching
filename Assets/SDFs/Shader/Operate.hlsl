@@ -1,17 +1,10 @@
 ﻿#ifndef Operate
 #define Operate
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 struct DrawSceneData
 {
     float opResult;
     float3 opColor;
-    /*
-     DrawSceneData(DrawSceneData data)
-    {
-        opResult =data.opResult;
-        opColor = data.opColor;
-    };*/
 };
 
 //min(a,b) ->a∪b
