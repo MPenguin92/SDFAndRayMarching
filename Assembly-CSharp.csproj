@@ -59,7 +59,6 @@
      <Folder Include="Assets\SDFs" />
      <None Include="Assets\Inigo Quilez.txt" />
      <Folder Include="Assets\SDFs\Shader" />
-     <None Include="Assets\SDFs\Shader\Transform.hlsl" />
      <Folder Include="Assets\TutorialInfo\Scripts" />
      <Folder Include="Assets\TutorialInfo\Icons" />
      <Folder Include="Assets\TutorialInfo" />
